@@ -32,6 +32,7 @@
 #include <hardware/camera.h>
 #include <camera/Camera.h>
 #include <camera/CameraParameters.h>
+#include <camera/CameraParameters2.h>
 #include <camera/CameraParametersExtra.h>
 
 static android::Mutex gCameraWrapperLock;
@@ -40,10 +41,11 @@ static camera_module_t *gVendorModule = 0;
 static char **fixed_set_params = NULL;
 
 static int camera_device_open(const hw_module_t *module, const char *name,
-                hw_device_t **device);
-static int camera_device_close(hw_device_t *device);
+        hw_device_t **device);
 static int camera_get_number_of_cameras(void);
 static int camera_get_camera_info(int camera_id, struct camera_info *info);
+static int camera_send_command(struct camera_device *device, int32_t cmd,
+        int32_t arg1, int32_t arg2);
 
 static struct hw_module_methods_t camera_module_methods = {
     .open = camera_device_open
@@ -102,8 +104,7 @@ static int check_vendor_module()
 
 const static char * iso_values[] = {"auto,ISO_HJR,ISO100,ISO200,ISO400,ISO800,ISO1600,auto"};
 
-static char *camera_fixup_getparams(int __attribute__((unused)) id,
-    const char *settings)
+static char *camera_fixup_getparams(int id, const char *settings)
 {
     android::CameraParameters params;
     params.unflatten(android::String8(settings));
@@ -118,6 +119,7 @@ static char *camera_fixup_getparams(int __attribute__((unused)) id,
     params.set(android::CameraParameters::KEY_EXPOSURE_COMPENSATION_STEP, "0.5");
     params.set(android::CameraParameters::KEY_MIN_EXPOSURE_COMPENSATION, "-4");
     params.set(android::CameraParameters::KEY_MAX_EXPOSURE_COMPENSATION, "4");
+
     /* If the vendor has HFR values but doesn't also expose that
      * this can be turned off, fixup the params to tell the Camera
      * that it really is okay to turn it off.
@@ -128,6 +130,9 @@ static char *camera_fixup_getparams(int __attribute__((unused)) id,
         sprintf(tmp, "%s,off", hfrValues);
         params.set(KEY_VIDEO_HFR_VALUES, tmp);
     }
+
+    /* Enforce video-snapshot-supported to true */
+    params.set(android::CameraParameters::KEY_VIDEO_SNAPSHOT_SUPPORTED, "true");
 
     android::String8 strParams = params.flatten();
     char *ret = strdup(strParams.string());
@@ -140,8 +145,9 @@ static char *camera_fixup_getparams(int __attribute__((unused)) id,
     return ret;
 }
 
-static char *camera_fixup_setparams(int id, const char *settings)
+static char *camera_fixup_setparams(struct camera_device *device, const char *settings)
 {
+    int id = CAMERA_ID(device);
     android::CameraParameters params;
     params.unflatten(android::String8(settings));
 
@@ -362,21 +368,13 @@ static int camera_auto_focus(struct camera_device *device)
 
 static int camera_cancel_auto_focus(struct camera_device *device)
 {
-    int ret = 0;
-
     ALOGV("%s->%08X->%08X", __FUNCTION__, (uintptr_t)device,
             (uintptr_t)(((wrapper_camera_device_t*)device)->vendor));
 
     if (!device)
         return -EINVAL;
 
-    /* Calling cancel_auto_focus causes the camera to crash for unknown reasons.
-     * Disabling it has no adverse effect.
-     * This is needed so some 3rd party camera apps don't lock up.
-     * if (camera_preview_enabled(device))
-     *    ret = VENDOR_CALL(device, cancel_auto_focus); */
-
-    return ret;
+    return VENDOR_CALL(device, cancel_auto_focus);
 }
 
 static int camera_take_picture(struct camera_device *device)
@@ -410,7 +408,7 @@ static int camera_set_parameters(struct camera_device *device, const char *param
         return -EINVAL;
 
     char *tmp = NULL;
-    tmp = camera_fixup_setparams(CAMERA_ID(device), params);
+    tmp = camera_fixup_setparams(device, params);
 
     int ret = VENDOR_CALL(device, set_parameters, tmp);
     return ret;
@@ -531,7 +529,7 @@ static int camera_device_open(const hw_module_t *module, const char *name,
 
     android::Mutex::Autolock lock(gCameraWrapperLock);
 
-    ALOGV("camera_device open");
+    ALOGV("%s", __FUNCTION__);
 
     if (name != NULL) {
         if (check_vendor_module())
@@ -585,7 +583,7 @@ static int camera_device_open(const hw_module_t *module, const char *name,
         memset(camera_ops, 0, sizeof(*camera_ops));
 
         camera_device->base.common.tag = HARDWARE_DEVICE_TAG;
-        camera_device->base.common.version = CAMERA_DEVICE_API_VERSION_1_0;
+        camera_device->base.common.version = HARDWARE_DEVICE_API_VERSION(1, 0);
         camera_device->base.common.module = (hw_module_t *)(module);
         camera_device->base.common.close = camera_device_close;
         camera_device->base.ops = camera_ops;

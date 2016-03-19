@@ -49,10 +49,9 @@ PRODUCT_COPY_FILES += \
 
 # Camera
 PRODUCT_PACKAGES += \
-    camera.msm8226 \
+    camera.afyonltetmo \
     libstlport \
     libboringssl-compat \
-    libxml2
 
 # Media
 PRODUCT_COPY_FILES += \
@@ -133,5 +132,3 @@ PRODUCT_AAPT_PREF_CONFIG := hdpi
 TARGET_SCREEN_HEIGHT := 960
 TARGET_SCREEN_WIDTH := 540
 
-# Remove msm8226 camera module
-# PRODUCT_PACKAGES := $(filter-out camera.msm8226,$(PRODUCT_PACKAGES))

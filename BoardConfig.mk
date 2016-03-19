@@ -23,7 +23,7 @@
 # inherit from msm8226-common
 -include device/samsung/msm8226-common/BoardConfigCommon.mk
 
-TARGET_SPECIFIC_HEADER_PATH := device/samsung/afyonltetmo/include
+TARGET_SPECIFIC_HEADER_PATH += device/samsung/afyonltetmo/include
 
 # inherit from the proprietary version
 -include vendor/samsung/afyonltetmo/BoardConfigVendor.mk
@@ -44,16 +44,14 @@ TARGET_KERNEL_SOURCE := kernel/samsung/msm8226
 TARGET_KERNEL_VARIANT_CONFIG := msm8926-sec_afyonltetmo_defconfig
 
 # Audio
+TARGET_QCOM_AUDIO_VARIANT := caf
+BOARD_USES_ALSA_AUDIO := true
+AUDIO_FEATURE_ENABLED_LOW_LATENCY_CAPTURE := true
 AUDIO_FEATURE_DISABLED_ANC_HEADSET := true
 AUDIO_FEATURE_DISABLED_MULTI_VOICE_SESSIONS := true
-TARGET_QCOM_AUDIO_VARIANT := caf
 
 # Bluetooth
 BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/samsung/afyonltetmo/bluetooth
-
-# Camera
-# COMMON_GLOBAL_CFLAGS += -DSAMSUNG_CAMERA_HARDWARE
-# BOARD_USES_LEGACY_MMAP := true
 
 # CMHW
 BOARD_HARDWARE_CLASS += device/samsung/afyonltetmo/cmhw
@@ -63,7 +61,7 @@ TARGET_HW_DISK_ENCRYPTION := true
 
 # Media
 TARGET_ENABLE_QC_AV_ENHANCEMENTS := true
-TARGET_QCOM_MEDIA_VARIANT := caf-new
+TARGET_QCOM_MEDIA_VARIANT := caf
 
 # NFC
 BOARD_NFC_HAL_SUFFIX := msm8226
@@ -91,7 +89,35 @@ BOARD_USE_CUSTOM_RECOVERY_FONT := \"roboto_15x24.h\"
 BOARD_HAS_NO_MISC_PARTITION := true
 BOARD_HAS_NO_SELECT_BUTTON := true
 BOARD_RECOVERY_SWIPE := true
+
+# twrp
+TARGET_RECOVERY_TWRP := true
+ifeq ($(TARGET_RECOVERY_TWRP),true)
+TARGET_RECOVERY_FSTAB := device/samsung/afyonltetmo/rootdir/twrp.fstab
+else
 TARGET_RECOVERY_FSTAB := device/samsung/afyonltetmo/rootdir/fstab.qcom
+endif
+
+ifeq ($(TARGET_RECOVERY_TWRP),true)
+TARGET_RECOVERY_INITRC := device/samsung/afyonltetmo/rootdir/init.qcom.recovery.rc
+TW_THEME := portrait_hdpi
+TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
+DEVICE_RESOLUTION := 540 x 960
+SP1_NAME := "internal_sd"
+SP1_BACKUP_METHOD := files
+SP1_MOUNTABLE := 1
+TW_INTERNAL_STORAGE_PATH := "/data/media/0"
+TW_INTERNAL_STORAGE_MOUNT_POINT := "data"
+TW_EXTERNAL_STORAGE_PATH := "/storage/sdcard1"
+TW_EXTERNAL_STORAGE_MOUNT_POINT := "external_sd"
+TW_DEFAULT_EXTERNAL_STORAGE := true
+TW_FLASH_FROM_STORAGE := true
+BOARD_USE_CUSTOM_RECOVERY_FONT := \"roboto_10x18.h\"
+RECOVERY_GRAPHICS_USE_LINELENGTH := true
+TW_HAS_DOWNLOAD_MODE := true
+BOARD_SUPPRESS_SECURE_ERASE := true
+COMMON_GLOBAL_CFLAGS += -DNO_SECURE_DISCARD
+endif
 
 # Time services
 BOARD_USES_QC_TIME_SERVICES := true
@@ -100,4 +126,14 @@ BOARD_USES_QC_TIME_SERVICES := true
 TARGET_UNIFIED_DEVICE := true
 TARGET_INIT_VENDOR_LIB := libinit_msm
 TARGET_LIBINIT_DEFINES_FILE := device/samsung/afyonltetmo/init/init_afyonlte.c
+
+# Releasetools
+TARGET_PROVIDES_RELEASETOOLS := true
+TARGET_RELEASETOOL_OTA_FROM_TARGET_SCRIPT := device/samsung/afyonltetmo/releasetools/ota_from_target_files
+
+# Insecure boot
+ADDITIONAL_DEFAULT_PROPERTIES += ro.secure=0
+ADDITIONAL_DEFAULT_PROPERTIES += ro.adb.secure=0
+ADDITIONAL_DEFAULT_PROPERTIES += persist.sys.usb.config=mtp
+ADDITIONAL_DEFAULT_PROPERTIES += persist.service.adb.enable=1
 

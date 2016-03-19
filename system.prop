@@ -31,6 +31,7 @@ ro.nfc.sec_hal=true
 # Radio
 rild.libargs=-d /dev/smd0
 rild.libpath=/system/lib/libsec-ril.so
+telephony.lteOnCdmaDevice=0
 ro.ril.telephony.mqanelements=6
 ro.telephony.ril_class=SamsungMSM8226RIL
 persist.data.netmgrd.qos.enable=true
