@@ -9,7 +9,6 @@ ui_print("::                            ::");
 ui_print("::                            ::");
 ui_print("::::::::::::::::::::::::::::::::");
 ui_print("Formatting System");
-unmount("/system");
 show_progress(0.750000, 0);
 format("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system", "0", "/system");
 mount("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system", "/system");
